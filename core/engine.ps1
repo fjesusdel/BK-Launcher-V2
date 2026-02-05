@@ -1,5 +1,5 @@
 # ========================================
-# BK-Launcher V2 - Core Engine
+# BK-Launcher V2 - Core Engine (FINAL)
 # ========================================
 
 $Global:BK_Apps = @()
@@ -36,59 +36,6 @@ function Test-AppInstalled {
 }
 
 # ----------------------------------------
-function Wait-ForAppState {
-    param (
-        [hashtable]$App,
-        [bool]$ExpectedState,
-        [int]$TimeoutSeconds = 60
-    )
-
-    $elapsed = 0
-    while ($elapsed -lt $TimeoutSeconds) {
-        if ((Test-AppInstalled $App) -eq $ExpectedState) {
-            return $true
-        }
-        Start-Sleep 2
-        $elapsed += 2
-    }
-    return $false
-}
-
-# ----------------------------------------
-function Invoke-AppAction {
-    param (
-        [hashtable]$App,
-        [ValidateSet("install","uninstall")]
-        [string]$Action
-    )
-
-    if (-not $App.ContainsKey($Action)) {
-        return @{ Success=$false; Message="Accion no soportada" }
-    }
-
-    $verify = $true
-    if ($Action -eq "install" -and $App.ContainsKey("VerifyAfterInstall")) {
-        $verify = [bool]$App.VerifyAfterInstall
-    }
-
-    try {
-        & $App[$Action]
-    } catch {
-        return @{ Success=$false; Message=$_.Exception.Message }
-    }
-
-    if (-not $verify) {
-        return @{ Success=$true; Message="Instalacion iniciada (verificacion manual)" }
-    }
-
-    if (Wait-ForAppState -App $App -ExpectedState ($Action -eq "install")) {
-        return @{ Success=$true; Message="Operacion confirmada" }
-    }
-
-    return @{ Success=$false; Message="No se pudo verificar el cambio" }
-}
-
-# ----------------------------------------
 # Dependency resolution
 # ----------------------------------------
 function Resolve-Dependencies {
@@ -119,7 +66,6 @@ function Resolve-Dependencies {
     $Resolved[$App.Id] = $App
 }
 
-# ----------------------------------------
 function Get-InstallPlan {
     param ([array]$SelectedApps)
 
@@ -129,4 +75,61 @@ function Get-InstallPlan {
     }
 
     return $resolved.Values
+}
+
+# ----------------------------------------
+function Invoke-AppAction {
+    param (
+        [hashtable]$App,
+        [ValidateSet("install","uninstall")]
+        [string]$Action
+    )
+
+    if (-not $App.ContainsKey($Action)) {
+        return @{ Success=$false; Message="Accion no soportada" }
+    }
+
+    try {
+        & $App[$Action]
+    } catch {
+        return @{ Success=$false; Message=$_.Exception.Message }
+    }
+
+    # --- REGLA DEFINITIVA ---
+    # Nunca verificamos DESINSTALACIONES
+    if ($Action -eq "uninstall") {
+        return @{
+            Success = $true
+            Message = "Desinstalacion iniciada"
+        }
+    }
+
+    # --- Instalaciones ---
+    $verify = $true
+    if ($App.ContainsKey("VerifyAfterInstall")) {
+        $verify = [bool]$App.VerifyAfterInstall
+    }
+
+    if (-not $verify) {
+        return @{
+            Success = $true
+            Message = "Instalacion iniciada (verificacion manual)"
+        }
+    }
+
+    # Verificacion basica de instalacion
+    for ($i = 0; $i -lt 30; $i++) {
+        if (Test-AppInstalled $App) {
+            return @{
+                Success = $true
+                Message = "Instalacion confirmada"
+            }
+        }
+        Start-Sleep 2
+    }
+
+    return @{
+        Success = $false
+        Message = "No se pudo verificar la instalacion"
+    }
 }
