@@ -2,16 +2,19 @@
 # BK-Launcher V2 - Main Launcher
 # ========================================
 
+Write-Host ">>> BK-LAUNCHER V2 - CARGANDO..." -ForegroundColor Yellow
+Start-Sleep 1
+
 . "$PSScriptRoot\config\settings.ps1"
 . "$PSScriptRoot\core\system.ps1"
 . "$PSScriptRoot\core\engine.ps1"
 . "$PSScriptRoot\core\menu.ps1"
 
-$Global:SystemInfo = Get-SystemInfo
 Load-Apps "$PSScriptRoot\apps"
 
 # ----------------------------------------
 function Handle-Install {
+
     $apps = $Global:BK_Apps
     $selected = Show-MultiSelectMenu -Apps $apps -Title "INSTALAR APLICACIONES"
 
@@ -26,6 +29,7 @@ function Handle-Install {
     }
 
     foreach ($app in $plan) {
+
         if (Test-AppInstalled $app) {
             Write-Host "$($app.Name) ya instalada. Se omite." -ForegroundColor Gray
             continue
@@ -52,9 +56,6 @@ function Show-MainMenu {
     Write-Host "BK-Launcher V2" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "1 - Instalar aplicaciones"
-    Write-Host "2 - Desinstalar aplicaciones"
-    Write-Host "3 - Instalar paquetes"
-    Write-Host "4 - Acerca de"
     Write-Host "0 - Salir"
     Write-Host ""
 

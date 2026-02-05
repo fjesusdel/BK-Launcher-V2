@@ -24,7 +24,7 @@ function Load-Apps {
 # ----------------------------------------
 function Get-AppById {
     param ([string]$Id)
-    return $Global:BK_Apps | Where-Object { $_.Id -eq $Id }
+    $Global:BK_Apps | Where-Object { $_.Id -eq $Id }
 }
 
 # ----------------------------------------
@@ -32,7 +32,7 @@ function Test-AppInstalled {
     param ([hashtable]$App)
 
     if (-not $App.Detect) { return $false }
-    try { return & $App.Detect } catch { return $false }
+    try { & $App.Detect } catch { return $false }
 }
 
 # ----------------------------------------
@@ -66,7 +66,10 @@ function Invoke-AppAction {
         return @{ Success=$false; Message="Accion no soportada" }
     }
 
-    $expectedState = ($Action -eq "install")
+    $verify = $true
+    if ($Action -eq "install" -and $App.ContainsKey("VerifyAfterInstall")) {
+        $verify = [bool]$App.VerifyAfterInstall
+    }
 
     try {
         & $App[$Action]
@@ -74,25 +77,19 @@ function Invoke-AppAction {
         return @{ Success=$false; Message=$_.Exception.Message }
     }
 
-    if (Wait-ForAppState -App $App -ExpectedState $expectedState) {
-        return @{
-            Success = $true
-            Message = if ($expectedState) {
-                "Instalacion confirmada"
-            } else {
-                "Desinstalacion confirmada"
-            }
-        }
+    if (-not $verify) {
+        return @{ Success=$true; Message="Instalacion iniciada (verificacion manual)" }
     }
 
-    return @{
-        Success = $false
-        Message = "No se pudo confirmar el cambio"
+    if (Wait-ForAppState -App $App -ExpectedState ($Action -eq "install")) {
+        return @{ Success=$true; Message="Operacion confirmada" }
     }
+
+    return @{ Success=$false; Message="No se pudo verificar el cambio" }
 }
 
 # ----------------------------------------
-# Dependency resolution (recursive, ordered)
+# Dependency resolution
 # ----------------------------------------
 function Resolve-Dependencies {
     param (
@@ -102,7 +99,7 @@ function Resolve-Dependencies {
     )
 
     if ($Seen[$App.Id]) {
-        throw "Dependencia circular detectada en $($App.Id)"
+        throw "Dependencia circular detectada: $($App.Id)"
     }
 
     if ($Resolved[$App.Id]) {
