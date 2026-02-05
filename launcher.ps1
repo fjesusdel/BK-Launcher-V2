@@ -42,8 +42,17 @@ function Show-MainMenu {
 
     switch ($choice) {
         "1" {
-            $appsToInstall = Get-NotInstalledApps
-            Show-InstallMenu -Apps $appsToInstall
+            $apps = Get-NotInstalledApps
+            $selectedApps = Show-MultiSelectMenu -Apps $apps -Title "INSTALAR APLICACIONES"
+
+            if ($selectedApps.Count -gt 0) {
+                Write-Host ""
+                Write-Host "Apps seleccionadas:" -ForegroundColor $Color_Info
+                foreach ($app in $selectedApps) {
+                    Write-Host "- $($app.Name)" -ForegroundColor $Color_Info
+                }
+                Read-Host "Pulsa ENTER para volver"
+            }
         }
         "2" { Pause-Placeholder }
         "3" { Pause-Placeholder }
