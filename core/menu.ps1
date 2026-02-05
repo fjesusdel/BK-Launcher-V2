@@ -14,7 +14,7 @@ function Show-MultiSelectMenu {
         Write-Host "   $Title"                       -ForegroundColor $Color_Title
         Write-Host "--------------------------------" -ForegroundColor $Color_Title
         Write-Host ""
-        Write-Host "No hay aplicaciones disponibles." -ForegroundColor $Color_Info
+        Write-Host "No hay aplicaciones definidas." -ForegroundColor $Color_Info
         Write-Host ""
         Read-Host "Pulsa ENTER para volver"
         return @()
@@ -35,8 +35,16 @@ function Show-MultiSelectMenu {
 
         $index = 1
         foreach ($app in $Apps) {
-            $mark = if ($selected[$app.Id]) { "[X]" } else { "[ ]" }
-            Write-Host "$mark $index - $($app.Name)" -ForegroundColor $Color_Menu
+            $isInstalled = $false
+            if ($app.Detect) {
+                $isInstalled = & $app.Detect
+            }
+
+            $mark   = if ($selected[$app.Id]) { "[X]" } else { "[ ]" }
+            $status = if ($isInstalled) { "INSTALADA" } else { "NO INSTALADA" }
+            $color  = if ($isInstalled) { $Color_Error } else { $Color_Success }
+
+            Write-Host "$mark $index - $($app.Name) [$status]" -ForegroundColor $color
             $index++
         }
 

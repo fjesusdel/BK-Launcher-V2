@@ -42,17 +42,32 @@ function Show-MainMenu {
 
     switch ($choice) {
         "1" {
-            $apps = Get-NotInstalledApps
+            $apps = $Global:BK_Apps
             $selectedApps = Show-MultiSelectMenu -Apps $apps -Title "INSTALAR APLICACIONES"
 
-            if ($selectedApps.Count -gt 0) {
-                Write-Host ""
-                Write-Host "Apps seleccionadas:" -ForegroundColor $Color_Info
-                foreach ($app in $selectedApps) {
-                    Write-Host "- $($app.Name)" -ForegroundColor $Color_Info
+            foreach ($app in $selectedApps) {
+                $installed = $false
+                if ($app.Detect) {
+                    $installed = & $app.Detect
                 }
-                Read-Host "Pulsa ENTER para volver"
+
+                if ($installed) {
+                    Write-Host "$($app.Name) ya estaba instalada. Se omite." -ForegroundColor $Color_Info
+                    continue
+                }
+
+                Write-Host "Instalando $($app.Name)..." -ForegroundColor $Color_Info
+                $result = Invoke-AppAction -App $app -Action "install"
+
+                if ($result.Success) {
+                    Write-Host "$($app.Name) instalada correctamente." -ForegroundColor $Color_Success
+                }
+                else {
+                    Write-Host "Error instalando $($app.Name): $($result.Message)" -ForegroundColor $Color_Error
+                }
             }
+
+            Read-Host "Pulsa ENTER para volver"
         }
         "2" { Pause-Placeholder }
         "3" { Pause-Placeholder }
