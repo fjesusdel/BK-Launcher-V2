@@ -8,8 +8,14 @@
 # Load system detection
 . "$PSScriptRoot\core\system.ps1"
 
+# Load core engine
+. "$PSScriptRoot\core\engine.ps1"
+
 # Detect system once at startup
 $Global:SystemInfo = Get-SystemInfo
+
+# Load apps (empty for now)
+Load-Apps "$PSScriptRoot\apps"
 
 # ----------------------------------------
 # Main Menu
