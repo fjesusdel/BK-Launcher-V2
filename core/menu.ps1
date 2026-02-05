@@ -36,9 +36,7 @@ function Show-MultiSelectMenu {
         $index = 1
         foreach ($app in $Apps) {
             $isInstalled = $false
-            if ($app.Detect) {
-                $isInstalled = & $app.Detect
-            }
+            if ($app.Detect) { $isInstalled = & $app.Detect }
 
             $mark   = if ($selected[$app.Id]) { "[X]" } else { "[ ]" }
             $status = if ($isInstalled) { "INSTALADA" } else { "NO INSTALADA" }
@@ -56,13 +54,8 @@ function Show-MultiSelectMenu {
 
         $input = Read-Host "Seleccion"
 
-        if ($input -eq "0") {
-            return @()
-        }
-
-        if ([string]::IsNullOrWhiteSpace($input)) {
-            break
-        }
+        if ($input -eq "0") { return @() }
+        if ([string]::IsNullOrWhiteSpace($input)) { break }
 
         if ($input -match '^\d+$') {
             $choice = [int]$input

@@ -22,45 +22,38 @@ function Load-Apps {
     Get-ChildItem -Path $AppsPath -Filter "*.ps1" | ForEach-Object {
         try {
             $app = . $_.FullName
-
             if ($null -ne $app -and $app.Id) {
                 $Global:BK_Apps += $app
             }
         }
         catch {
-            # App load error - ignored for now
+            # Ignore broken apps for now
         }
     }
 }
 
 # ----------------------------------------
-# Get app by Id
+# App helpers
 # ----------------------------------------
-function Get-AppById {
+function Test-AppInstalled {
     param (
-        [string]$Id
+        [hashtable]$App
     )
 
-    return $Global:BK_Apps | Where-Object { $_.Id -eq $Id }
-}
-
-# ----------------------------------------
-# Get apps by state
-# ----------------------------------------
-function Get-InstalledApps {
-    return $Global:BK_Apps | Where-Object {
-        $_.Detect -and (& $_.Detect)
+    if (-not $App.Detect) {
+        return $false
     }
-}
 
-function Get-NotInstalledApps {
-    return $Global:BK_Apps | Where-Object {
-        $_.Detect -and (-not (& $_.Detect))
+    try {
+        return & $App.Detect
+    }
+    catch {
+        return $false
     }
 }
 
 # ----------------------------------------
-# Execute app action
+# Execute app action with verification
 # ----------------------------------------
 function Invoke-AppAction {
     param (
@@ -79,18 +72,38 @@ function Invoke-AppAction {
         }
     }
 
+    $before = Test-AppInstalled $App
+
     try {
         & $App[$Action]
-
-        return @{
-            Success = $true
-            Message = "Accion ejecutada"
-        }
     }
     catch {
         return @{
             Success = $false
             Message = $_.Exception.Message
         }
+    }
+
+    Start-Sleep 2
+
+    $after = Test-AppInstalled $App
+
+    if ($Action -eq "install" -and -not $before -and $after) {
+        return @{
+            Success = $true
+            Message = "Instalacion confirmada"
+        }
+    }
+
+    if ($Action -eq "uninstall" -and $before -and -not $after) {
+        return @{
+            Success = $true
+            Message = "Desinstalacion confirmada"
+        }
+    }
+
+    return @{
+        Success = $false
+        Message = "No se pudo verificar el resultado"
     }
 }
