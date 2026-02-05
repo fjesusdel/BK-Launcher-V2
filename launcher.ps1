@@ -11,10 +11,13 @@
 # Load core engine
 . "$PSScriptRoot\core\engine.ps1"
 
+# Load menus
+. "$PSScriptRoot\core\menu.ps1"
+
 # Detect system once at startup
 $Global:SystemInfo = Get-SystemInfo
 
-# Load apps (empty for now)
+# Load apps
 Load-Apps "$PSScriptRoot\apps"
 
 # ----------------------------------------
@@ -38,7 +41,10 @@ function Show-MainMenu {
     $choice = Read-Host $TXT_MainMenu_Select
 
     switch ($choice) {
-        "1" { Pause-Placeholder }
+        "1" {
+            $appsToInstall = Get-NotInstalledApps
+            Show-InstallMenu -Apps $appsToInstall
+        }
         "2" { Pause-Placeholder }
         "3" { Pause-Placeholder }
         "4" { Show-About }
@@ -80,7 +86,7 @@ function Show-About {
 }
 
 # ----------------------------------------
-# Placeholder for future features
+# Placeholder
 # ----------------------------------------
 function Pause-Placeholder {
     Write-Host ""
