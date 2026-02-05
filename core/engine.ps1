@@ -2,58 +2,58 @@
 # BK-Launcher V2 - Core Engine
 # ========================================
 
-# Global app registry
 $Global:BK_Apps = @()
 
 # ----------------------------------------
-# Load all app definitions
-# ----------------------------------------
 function Load-Apps {
-    param (
-        [string]$AppsPath
-    )
+    param ([string]$AppsPath)
 
     $Global:BK_Apps = @()
 
-    if (-not (Test-Path $AppsPath)) {
-        return
-    }
+    if (-not (Test-Path $AppsPath)) { return }
 
     Get-ChildItem -Path $AppsPath -Filter "*.ps1" | ForEach-Object {
         try {
             $app = . $_.FullName
-            if ($null -ne $app -and $app.Id) {
+            if ($app -and $app.Id) {
                 $Global:BK_Apps += $app
             }
-        }
-        catch {
-            # Ignore broken apps for now
-        }
+        } catch {}
     }
 }
 
 # ----------------------------------------
-# App helpers
-# ----------------------------------------
 function Test-AppInstalled {
-    param (
-        [hashtable]$App
-    )
+    param ([hashtable]$App)
 
-    if (-not $App.Detect) {
-        return $false
-    }
+    if (-not $App.Detect) { return $false }
 
     try {
         return & $App.Detect
-    }
-    catch {
+    } catch {
         return $false
     }
 }
 
 # ----------------------------------------
-# Execute app action with verification
+function Wait-ForAppState {
+    param (
+        [hashtable]$App,
+        [bool]$ExpectedState,
+        [int]$TimeoutSeconds = 40
+    )
+
+    $elapsed = 0
+    while ($elapsed -lt $TimeoutSeconds) {
+        if ((Test-AppInstalled $App) -eq $ExpectedState) {
+            return $true
+        }
+        Start-Sleep 2
+        $elapsed += 2
+    }
+    return $false
+}
+
 # ----------------------------------------
 function Invoke-AppAction {
     param (
@@ -72,7 +72,7 @@ function Invoke-AppAction {
         }
     }
 
-    $before = Test-AppInstalled $App
+    $expectedState = ($Action -eq "install")
 
     try {
         & $App[$Action]
@@ -84,26 +84,21 @@ function Invoke-AppAction {
         }
     }
 
-    Start-Sleep 2
+    $verified = Wait-ForAppState -App $App -ExpectedState $expectedState
 
-    $after = Test-AppInstalled $App
-
-    if ($Action -eq "install" -and -not $before -and $after) {
+    if ($verified) {
         return @{
             Success = $true
-            Message = "Instalacion confirmada"
-        }
-    }
-
-    if ($Action -eq "uninstall" -and $before -and -not $after) {
-        return @{
-            Success = $true
-            Message = "Desinstalacion confirmada"
+            Message = if ($expectedState) {
+                "Instalacion confirmada"
+            } else {
+                "Desinstalacion confirmada"
+            }
         }
     }
 
     return @{
         Success = $false
-        Message = "No se pudo verificar el resultado"
+        Message = "La accion se ejecuto, pero el sistema no confirmo el cambio a tiempo"
     }
 }
