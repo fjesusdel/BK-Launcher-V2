@@ -9,7 +9,6 @@ function Load-Apps {
     param ([string]$AppsPath)
 
     $Global:BK_Apps = @()
-
     if (-not (Test-Path $AppsPath)) { return }
 
     Get-ChildItem -Path $AppsPath -Filter "*.ps1" | ForEach-Object {
@@ -23,16 +22,17 @@ function Load-Apps {
 }
 
 # ----------------------------------------
+function Get-AppById {
+    param ([string]$Id)
+    return $Global:BK_Apps | Where-Object { $_.Id -eq $Id }
+}
+
+# ----------------------------------------
 function Test-AppInstalled {
     param ([hashtable]$App)
 
     if (-not $App.Detect) { return $false }
-
-    try {
-        return & $App.Detect
-    } catch {
-        return $false
-    }
+    try { return & $App.Detect } catch { return $false }
 }
 
 # ----------------------------------------
@@ -40,7 +40,7 @@ function Wait-ForAppState {
     param (
         [hashtable]$App,
         [bool]$ExpectedState,
-        [int]$TimeoutSeconds = 40
+        [int]$TimeoutSeconds = 60
     )
 
     $elapsed = 0
@@ -57,36 +57,24 @@ function Wait-ForAppState {
 # ----------------------------------------
 function Invoke-AppAction {
     param (
-        [Parameter(Mandatory)]
         [hashtable]$App,
-
-        [Parameter(Mandatory)]
-        [ValidateSet("install", "uninstall")]
+        [ValidateSet("install","uninstall")]
         [string]$Action
     )
 
     if (-not $App.ContainsKey($Action)) {
-        return @{
-            Success = $false
-            Message = "Accion no soportada"
-        }
+        return @{ Success=$false; Message="Accion no soportada" }
     }
 
     $expectedState = ($Action -eq "install")
 
     try {
         & $App[$Action]
-    }
-    catch {
-        return @{
-            Success = $false
-            Message = $_.Exception.Message
-        }
+    } catch {
+        return @{ Success=$false; Message=$_.Exception.Message }
     }
 
-    $verified = Wait-ForAppState -App $App -ExpectedState $expectedState
-
-    if ($verified) {
+    if (Wait-ForAppState -App $App -ExpectedState $expectedState) {
         return @{
             Success = $true
             Message = if ($expectedState) {
@@ -99,6 +87,49 @@ function Invoke-AppAction {
 
     return @{
         Success = $false
-        Message = "La accion se ejecuto, pero el sistema no confirmo el cambio a tiempo"
+        Message = "No se pudo confirmar el cambio"
     }
+}
+
+# ----------------------------------------
+# Dependency resolution (recursive, ordered)
+# ----------------------------------------
+function Resolve-Dependencies {
+    param (
+        [hashtable]$App,
+        [hashtable]$Resolved,
+        [hashtable]$Seen
+    )
+
+    if ($Seen[$App.Id]) {
+        throw "Dependencia circular detectada en $($App.Id)"
+    }
+
+    if ($Resolved[$App.Id]) {
+        return
+    }
+
+    $Seen[$App.Id] = $true
+
+    foreach ($depId in $App.Dependencies) {
+        $dep = Get-AppById $depId
+        if (-not $dep) {
+            throw "Dependencia no encontrada: $depId"
+        }
+        Resolve-Dependencies -App $dep -Resolved $Resolved -Seen $Seen
+    }
+
+    $Resolved[$App.Id] = $App
+}
+
+# ----------------------------------------
+function Get-InstallPlan {
+    param ([array]$SelectedApps)
+
+    $resolved = @{}
+    foreach ($app in $SelectedApps) {
+        Resolve-Dependencies -App $app -Resolved $resolved -Seen @{}
+    }
+
+    return $resolved.Values
 }

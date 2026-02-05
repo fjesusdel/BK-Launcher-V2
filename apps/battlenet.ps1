@@ -4,11 +4,14 @@
 # ========================================
 
 return @{
-    Id           = "battlenet"
-    Name         = "Battle.net"
-    Type         = "binary"
-    InstallMode  = "silent"
-    Dependencies = @()
+    Id            = "battlenet"
+    Name          = "Battle.net"
+    Type          = "binary"
+
+    InstallMode   = "silent"
+    UninstallMode = "manual"
+
+    Dependencies  = @()
 
     Detect = {
         Test-Path "C:\Program Files (x86)\Battle.net\Battle.net.exe"
@@ -19,13 +22,13 @@ return @{
         $dest = "$env:TEMP\BattleNetSetup.exe"
 
         Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
-        Start-Process -FilePath $dest -ArgumentList "--lang=esES --installpath=`"C:\Program Files (x86)\Battle.net`"" -Wait
+        Start-Process -FilePath $dest -Wait
     }
 
     Uninstall = {
-        $uninstallPath = "C:\Program Files (x86)\Battle.net\Battle.net Uninstaller.exe"
-        if (Test-Path $uninstallPath) {
-            Start-Process -FilePath $uninstallPath -Wait
-        }
+        Write-Host "Battle.net requiere desinstalacion manual." -ForegroundColor Yellow
+        Write-Host "Se abrira la ventana de Aplicaciones de Windows."
+        Start-Sleep 2
+        Start-Process "ms-settings:appsfeatures"
     }
 }
