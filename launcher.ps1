@@ -2,9 +2,18 @@
 # BK-Launcher V2 - Main Launcher
 # ========================================
 
-# Load settings
+# Load global settings
 . "$PSScriptRoot\config\settings.ps1"
 
+# Load system detection
+. "$PSScriptRoot\core\system.ps1"
+
+# Detect system once at startup
+$Global:SystemInfo = Get-SystemInfo
+
+# ----------------------------------------
+# Main Menu
+# ----------------------------------------
 function Show-MainMenu {
     Clear-Host
 
@@ -35,6 +44,9 @@ function Show-MainMenu {
     }
 }
 
+# ----------------------------------------
+# About Section
+# ----------------------------------------
 function Show-About {
     Clear-Host
 
@@ -48,17 +60,31 @@ function Show-About {
     Write-Host "$TXT_About_Author  : $BK_Author"      -ForegroundColor $Color_Info
     Write-Host ""
     Write-Host $BK_Description                         -ForegroundColor $Color_Info
+
+    Write-Host ""
+    Write-Host "Sistema detectado:"                    -ForegroundColor $Color_Info
+    Write-Host "OS       : $($SystemInfo.OSName)"      -ForegroundColor $Color_Info
+    Write-Host "Version  : $($SystemInfo.OSVersion)"  -ForegroundColor $Color_Info
+    Write-Host "Arquitect: $($SystemInfo.Architecture)" -ForegroundColor $Color_Info
+    Write-Host "Admin    : $($SystemInfo.IsAdmin)"     -ForegroundColor $Color_Info
+    Write-Host "PowerSh  : $($SystemInfo.PowerShell)"  -ForegroundColor $Color_Info
+
     Write-Host ""
     Read-Host $TXT_About_Back
 }
 
+# ----------------------------------------
+# Placeholder for future features
+# ----------------------------------------
 function Pause-Placeholder {
     Write-Host ""
     Write-Host $TXT_NotImplemented -ForegroundColor $Color_Info
     Read-Host $TXT_About_Back
 }
 
-# Main loop
+# ----------------------------------------
+# Main Loop
+# ----------------------------------------
 while ($true) {
     Show-MainMenu
 }
