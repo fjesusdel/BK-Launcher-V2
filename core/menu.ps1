@@ -20,8 +20,20 @@ function Show-MultiSelectMenu {
         return @()
     }
 
+    # Separar apps BK (tools propias)
+    $bkApps = $Apps | Where-Object { $_.Id -in @("radial", "volume") }
+    $otherApps = $Apps | Where-Object { $_.Id -notin @("radial", "volume") }
+
+    $orderedApps = @()
+    if ($bkApps.Count -gt 0) {
+        $orderedApps += $bkApps
+    }
+    if ($otherApps.Count -gt 0) {
+        $orderedApps += $otherApps
+    }
+
     $selected = @{}
-    foreach ($app in $Apps) {
+    foreach ($app in $orderedApps) {
         $selected[$app.Id] = $false
     }
 
@@ -34,15 +46,39 @@ function Show-MultiSelectMenu {
         Write-Host ""
 
         $index = 1
-        foreach ($app in $Apps) {
+
+        if ($bkApps.Count -gt 0) {
+            Write-Host "==============================" -ForegroundColor $Color_Info
+            Write-Host "   BK LAUNCHER - TOOLS"        -ForegroundColor $Color_Info
+            Write-Host "==============================" -ForegroundColor $Color_Info
+            Write-Host ""
+        }
+
+        foreach ($app in $orderedApps) {
+
+            if ($index -eq ($bkApps.Count + 1) -and $bkApps.Count -gt 0) {
+                Write-Host ""
+                Write-Host "==============================" -ForegroundColor $Color_Info
+                Write-Host "        APLICACIONES"         -ForegroundColor $Color_Info
+                Write-Host "==============================" -ForegroundColor $Color_Info
+                Write-Host ""
+            }
+
             $isInstalled = $false
             if ($app.Detect) { $isInstalled = & $app.Detect }
 
             $mark   = if ($selected[$app.Id]) { "[X]" } else { "[ ]" }
             $status = if ($isInstalled) { "INSTALADA" } else { "NO INSTALADA" }
-            $color  = if ($isInstalled) { $Color_Error } else { $Color_Success }
 
-            Write-Host "$mark $index - $($app.Name) [$status]" -ForegroundColor $color
+            # Colores: sin rojo
+            $color = if ($isInstalled) { $Color_Title } else { $Color_Info }
+
+            $line = "{0} {1,2} - {2,-30} [{3}]" -f `
+                $mark, $index, $app.Name, $status
+
+            Write-Host $line -ForegroundColor $color
+            Write-Host ""
+
             $index++
         }
 
@@ -59,12 +95,12 @@ function Show-MultiSelectMenu {
 
         if ($input -match '^\d+$') {
             $choice = [int]$input
-            if ($choice -ge 1 -and $choice -le $Apps.Count) {
-                $app = $Apps[$choice - 1]
+            if ($choice -ge 1 -and $choice -le $orderedApps.Count) {
+                $app = $orderedApps[$choice - 1]
                 $selected[$app.Id] = -not $selected[$app.Id]
             }
         }
     }
 
-    return $Apps | Where-Object { $selected[$_.Id] }
+    return $orderedApps | Where-Object { $selected[$_.Id] }
 }
