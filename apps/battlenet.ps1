@@ -4,31 +4,37 @@
 # ========================================
 
 return @{
-    Id            = "battlenet"
-    Name          = "Battle.net"
-    Type          = "binary"
+    Id                 = "battlenet"
+    Name               = "Battle.net"
+    Type               = "app"
 
-    InstallMode   = "silent"
-    UninstallMode = "manual"
+    InstallMode        = "interactive"
+    UninstallMode      = "manual"
+    VerifyAfterInstall = $true
 
-    Dependencies  = @()
+    Dependencies       = @()
 
     Detect = {
         Test-Path "C:\Program Files (x86)\Battle.net\Battle.net.exe"
     }
 
     Install = {
-        $url  = "https://downloader.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe"
-        $dest = "$env:TEMP\BattleNetSetup.exe"
+        $url  = "https://www.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe"
+        $dest = "$env:TEMP\Battle.net-Setup.exe"
 
+        Write-Host " Descargando Battle.net..."
         Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
-        Start-Process -FilePath $dest -Wait
+
+        Write-Host " Lanzando instalador oficial..."
+        Start-Process $dest
     }
 
     Uninstall = {
-        Write-Host "Battle.net requiere desinstalacion manual." -ForegroundColor Yellow
-        Write-Host "Se abrira la ventana de Aplicaciones de Windows."
-        Start-Sleep 2
+        Write-Host ""
+        Write-Host " La desinstalacion de Battle.net es manual." -ForegroundColor Yellow
+        Write-Host " Se abrira el panel de aplicaciones de Windows." -ForegroundColor Yellow
+        Write-Host ""
+
         Start-Process "ms-settings:appsfeatures"
     }
 }

@@ -28,6 +28,32 @@ function Handle-Install {
         return
     }
 
+    # ---- AVISO PREVIO SI HAY APPS INTERACTIVAS ----
+    $interactiveApps = $plan | Where-Object {
+        $_.ContainsKey("InstallMode") -and $_.InstallMode -eq "interactive"
+    }
+
+    if ($interactiveApps.Count -gt 0) {
+        Clear-Host
+        UI-Header
+        UI-SectionTitle "AVISO IMPORTANTE"
+
+        Write-Host ""
+        Write-Host " Se van a lanzar uno o mas instaladores oficiales externos." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host " Durante el proceso:" -ForegroundColor Yellow
+        Write-Host "  - Apareceran ventanas de instalacion independientes" -ForegroundColor Yellow
+        Write-Host "  - El launcher puede quedar en segundo plano" -ForegroundColor Yellow
+        Write-Host "  - El proceso puede tardar unos segundos entre aplicaciones" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host " Esto es normal. No cierres el launcher." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host " Cuando pulses ENTER comenzara la instalacion." -ForegroundColor Cyan
+        Write-Host ""
+
+        Read-Host " Pulsa ENTER para continuar"
+    }
+
     foreach ($app in $plan) {
 
         if (Test-AppInstalled $app) {
@@ -42,13 +68,17 @@ function Handle-Install {
 
         $result = Invoke-AppAction -App $app -Action "install"
 
-        if ($result.Success) {
-            Write-Host " Estado: $($result.Message)" -ForegroundColor Green
-        } else {
+        if (-not $result.Success) {
             Write-Host " Error: $($result.Message)" -ForegroundColor Red
             Read-Host " Instalacion detenida. Pulsa ENTER"
             return
         }
+
+        if ($app.ContainsKey("InstallMode") -and $app.InstallMode -eq "interactive") {
+            continue
+        }
+
+        Write-Host " Estado: $($result.Message)" -ForegroundColor Green
     }
 
     Read-Host " Instalacion completada. Pulsa ENTER"
@@ -79,67 +109,6 @@ function Handle-Uninstall {
     }
 
     Read-Host " Proceso de desinstalacion finalizado. Pulsa ENTER"
-}
-
-# ----------------------------------------
-function Show-SystemInfo {
-
-    UI-Header
-    UI-SectionTitle "INFORMACION DEL SISTEMA"
-
-    $os = Get-CimInstance Win32_OperatingSystem
-    $isAdmin = ([Security.Principal.WindowsPrincipal] `
-        [Security.Principal.WindowsIdentity]::GetCurrent()
-    ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-
-    Write-Host " Sistema operativo : $($os.Caption)" -ForegroundColor White
-    Write-Host " Version           : $($os.Version)" -ForegroundColor White
-    Write-Host " Arquitectura      : $($os.OSArchitecture)" -ForegroundColor White
-    Write-Host ""
-    Write-Host " Usuario           : $env:USERNAME" -ForegroundColor White
-    Write-Host " Equipo            : $env:COMPUTERNAME" -ForegroundColor White
-    Write-Host " PowerShell        : $($PSVersionTable.PSVersion)" -ForegroundColor White
-    Write-Host ""
-    Write-Host " Permisos          : " -NoNewline -ForegroundColor White
-    if ($isAdmin) {
-        Write-Host "Administrador" -ForegroundColor Green
-    } else {
-        Write-Host "No administrador" -ForegroundColor Red
-    }
-    Write-Host ""
-    Write-Host " Ruta launcher     : $PSScriptRoot" -ForegroundColor DarkGray
-
-    Read-Host " Pulsa ENTER para volver"
-}
-
-# ----------------------------------------
-function Show-About {
-
-    UI-Header
-    UI-SectionTitle "ACERCA DE"
-
-    Write-Host " BK-LAUNCHER V2" -ForegroundColor White
-    Write-Host ""
-    Write-Host " Sistema modular de instalacion y gestion de software" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host " Autor      : Fran Delgado" -ForegroundColor Gray
-    Write-Host " Proyecto   : BK-Launcher" -ForegroundColor Gray
-    Write-Host " Version    : 2.0" -ForegroundColor Gray
-    Write-Host " Estado     : Estable" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host " Funciones principales:" -ForegroundColor Yellow
-    Write-Host "  - Instalacion multiple de aplicaciones" -ForegroundColor White
-    Write-Host "  - Resolucion automatica de dependencias" -ForegroundColor White
-    Write-Host "  - Desinstalacion segura sin bloqueos" -ForegroundColor White
-    Write-Host "  - Soporte para apps interactivas y manuales" -ForegroundColor White
-    Write-Host "  - Soporte para Rainmeter y skins" -ForegroundColor White
-    Write-Host ""
-    Write-Host " Notas:" -ForegroundColor Yellow
-    Write-Host "  - Algunas apps pueden requerir confirmacion manual" -ForegroundColor White
-    Write-Host "  - Algunas desinstalaciones pueden solicitar reinicio" -ForegroundColor White
-    Write-Host "  - El estado final se valida en el siguiente arranque" -ForegroundColor White
-
-    Read-Host " Pulsa ENTER para volver"
 }
 
 # ----------------------------------------

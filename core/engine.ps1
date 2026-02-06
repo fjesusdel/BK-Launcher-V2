@@ -89,14 +89,20 @@ function Invoke-AppAction {
         return @{ Success=$false; Message="Accion no soportada" }
     }
 
+    $installMode = "silent"
+    if ($App.ContainsKey("InstallMode")) {
+        $installMode = $App.InstallMode
+    }
+
     try {
         & $App[$Action]
     } catch {
         return @{ Success=$false; Message=$_.Exception.Message }
     }
 
-    # --- REGLA DEFINITIVA ---
-    # Nunca verificamos DESINSTALACIONES
+    # ------------------------------------
+    # DESINSTALACION: nunca verificar
+    # ------------------------------------
     if ($Action -eq "uninstall") {
         return @{
             Success = $true
@@ -104,7 +110,19 @@ function Invoke-AppAction {
         }
     }
 
-    # --- Instalaciones ---
+    # ------------------------------------
+    # INSTALACION INTERACTIVA (NO BLOQUEAR)
+    # ------------------------------------
+    if ($installMode -eq "interactive") {
+        return @{
+            Success = $true
+            Message = "Instalacion delegada al instalador oficial"
+        }
+    }
+
+    # ------------------------------------
+    # INSTALACION SILENCIOSA (verificable)
+    # ------------------------------------
     $verify = $true
     if ($App.ContainsKey("VerifyAfterInstall")) {
         $verify = [bool]$App.VerifyAfterInstall
@@ -113,11 +131,10 @@ function Invoke-AppAction {
     if (-not $verify) {
         return @{
             Success = $true
-            Message = "Instalacion iniciada (verificacion manual)"
+            Message = "Instalacion iniciada (sin verificacion)"
         }
     }
 
-    # Verificacion basica de instalacion
     for ($i = 0; $i -lt 30; $i++) {
         if (Test-AppInstalled $App) {
             return @{
