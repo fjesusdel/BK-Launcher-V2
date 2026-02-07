@@ -8,6 +8,12 @@ return @{
     Name                = "Radial Launcher"
     Type                = "skin"
 
+    Description = @"
+Skin de Rainmeter desarrollada para BK-Launcher.
+Muestra un menu radial visual para lanzar aplicaciones y acciones rapidas.
+Pensada para mejorar la productividad y el acceso rapido desde el escritorio.
+"@
+
     InstallMode         = "interactive"
     UninstallMode       = "manual"
     VerifyAfterInstall  = $false

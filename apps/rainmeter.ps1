@@ -8,6 +8,12 @@ return @{
     Name          = "Rainmeter"
     Type          = "binary"
 
+    Description = @"
+Rainmeter es una plataforma de personalizacion del escritorio para Windows.
+Permite mostrar informacion del sistema y crear interfaces visuales mediante skins.
+Es la base necesaria para usar herramientas como Radial Launcher.
+"@
+
     InstallMode   = "silent"
     UninstallMode = "interactive"
 

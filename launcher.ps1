@@ -123,6 +123,7 @@ function Show-MainMenu {
     Write-Host ""
 
     UI-Footer
+
     switch (Read-Host) {
         "1" { Handle-Install }
         "2" { Handle-Uninstall }

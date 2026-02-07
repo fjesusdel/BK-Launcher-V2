@@ -3,35 +3,76 @@
 # ========================================
 
 # ----------------------------------------
-# OBTENER INFORMACION DEL SISTEMA (DATOS)
+# OBTENER INFORMACION DEL SISTEMA
 # ----------------------------------------
 function Get-SystemInfo {
 
-    $os = Get-CimInstance Win32_OperatingSystem
+    $os  = Get-CimInstance Win32_OperatingSystem
+    $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
 
+    # CPU
+    $cpuLoad = $cpu.LoadPercentage
+    if ($cpuLoad -eq $null) { $cpuLoad = 0 }
+
+    # RAM (GB)
+    $totalRam = [math]::Round($os.TotalVisibleMemorySize / 1MB, 1)
+    $freeRam  = [math]::Round($os.FreePhysicalMemory / 1MB, 1)
+    $usedRam  = [math]::Round($totalRam - $freeRam, 1)
+    $ramUsage = if ($totalRam -gt 0) {
+        [math]::Round(($usedRam / $totalRam) * 100, 1)
+    } else { 0 }
+
+    # DISCO C:
+    $drive = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
+    $diskTotal = [math]::Round($drive.Size / 1GB, 1)
+    $diskFree  = [math]::Round($drive.FreeSpace / 1GB, 1)
+    $diskUsed  = [math]::Round($diskTotal - $diskFree, 1)
+    $diskUsage = if ($diskTotal -gt 0) {
+        [math]::Round(($diskUsed / $diskTotal) * 100, 1)
+    } else { 0 }
+
+    # RED
+    $net = Get-CimInstance Win32_NetworkAdapterConfiguration |
+        Where-Object { $_.IPAddress -and $_.DefaultIPGateway } |
+        Select-Object -First 1
+
+    $ipAddress = if ($net) { $net.IPAddress[0] } else { "No disponible" }
+    $adapter   = if ($net) { $net.Description } else { "No disponible" }
+
+    # Admin
     $isAdmin = ([Security.Principal.WindowsPrincipal] `
         [Security.Principal.WindowsIdentity]::GetCurrent()
     ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
-    if ([Environment]::Is64BitOperatingSystem) {
-        $architecture = "x64"
-    } else {
-        $architecture = "x86"
-    }
-
     return @{
         OSName       = $os.Caption
         OSVersion    = $os.Version
-        Architecture = $architecture
-        IsAdmin      = $isAdmin
-        PowerShell   = $PSVersionTable.PSVersion.ToString()
+        Architecture = if ([Environment]::Is64BitOperatingSystem) { "x64" } else { "x86" }
         User         = $env:USERNAME
         Computer     = $env:COMPUTERNAME
+        PowerShell   = $PSVersionTable.PSVersion.ToString()
+        IsAdmin      = $isAdmin
+
+        CPUName      = $cpu.Name.Trim()
+        CPULoad      = $cpuLoad
+
+        RAMTotal     = $totalRam
+        RAMUsed      = $usedRam
+        RAMFree      = $freeRam
+        RAMUsage     = $ramUsage
+
+        DiskTotal    = $diskTotal
+        DiskUsed     = $diskUsed
+        DiskFree     = $diskFree
+        DiskUsage    = $diskUsage
+
+        IPAddress    = $ipAddress
+        Adapter      = $adapter
     }
 }
 
 # ----------------------------------------
-# MOSTRAR INFORMACION DEL SISTEMA (MENU)
+# MOSTRAR INFORMACION DEL SISTEMA
 # ----------------------------------------
 function Show-SystemInfo {
 
@@ -42,16 +83,15 @@ function Show-SystemInfo {
     $info = Get-SystemInfo
 
     Write-Host ""
-    Write-Host " Sistema operativo : $($info.OSName)" -ForegroundColor White
-    Write-Host " Version           : $($info.OSVersion)" -ForegroundColor White
-    Write-Host " Arquitectura      : $($info.Architecture)" -ForegroundColor White
-    Write-Host ""
-    Write-Host " Usuario           : $($info.User)" -ForegroundColor White
-    Write-Host " Equipo            : $($info.Computer)" -ForegroundColor White
-    Write-Host " PowerShell        : $($info.PowerShell)" -ForegroundColor White
-    Write-Host ""
-    Write-Host " Permisos          : " -NoNewline -ForegroundColor White
-
+    Write-Host " SISTEMA" -ForegroundColor Cyan
+    Write-Host " -------------------------------------------"
+    Write-Host " SO           : $($info.OSName)"
+    Write-Host " Version      : $($info.OSVersion)"
+    Write-Host " Arquitectura : $($info.Architecture)"
+    Write-Host " Usuario      : $($info.User)"
+    Write-Host " Equipo       : $($info.Computer)"
+    Write-Host " PowerShell   : $($info.PowerShell)"
+    Write-Host " Permisos     : " -NoNewline
     if ($info.IsAdmin) {
         Write-Host "Administrador" -ForegroundColor Green
     } else {
@@ -59,9 +99,34 @@ function Show-SystemInfo {
     }
 
     Write-Host ""
-    Write-Host " Ruta del launcher : $PSScriptRoot" -ForegroundColor DarkGray
-    Write-Host ""
+    Write-Host " CPU" -ForegroundColor Cyan
+    Write-Host " -------------------------------------------"
+    Write-Host " Modelo       : $($info.CPUName)"
+    Write-Host " Uso actual   : $($info.CPULoad)%"
 
+    Write-Host ""
+    Write-Host " MEMORIA RAM" -ForegroundColor Cyan
+    Write-Host " -------------------------------------------"
+    Write-Host " Total        : $($info.RAMTotal) GB"
+    Write-Host " En uso       : $($info.RAMUsed) GB"
+    Write-Host " Libre        : $($info.RAMFree) GB"
+    Write-Host " Uso          : $($info.RAMUsage)%"
+
+    Write-Host ""
+    Write-Host " DISCO (C:)" -ForegroundColor Cyan
+    Write-Host " -------------------------------------------"
+    Write-Host " Total        : $($info.DiskTotal) GB"
+    Write-Host " En uso       : $($info.DiskUsed) GB"
+    Write-Host " Libre        : $($info.DiskFree) GB"
+    Write-Host " Uso          : $($info.DiskUsage)%"
+
+    Write-Host ""
+    Write-Host " RED" -ForegroundColor Cyan
+    Write-Host " -------------------------------------------"
+    Write-Host " Adaptador    : $($info.Adapter)"
+    Write-Host " IP local     : $($info.IPAddress)"
+
+    Write-Host ""
     Read-Host " Pulsa ENTER para volver al menu"
 }
 
@@ -83,13 +148,7 @@ function Show-About {
     Write-Host " Version : 2.0" -ForegroundColor Gray
     Write-Host " Estado  : Estable" -ForegroundColor Green
     Write-Host ""
-    Write-Host " Funciones principales:" -ForegroundColor Yellow
-    Write-Host "  - Instalacion multiple de aplicaciones" -ForegroundColor White
-    Write-Host "  - Instaladores interactivos y silenciosos" -ForegroundColor White
-    Write-Host "  - Resolucion de dependencias" -ForegroundColor White
-    Write-Host "  - Herramientas externas y scripts remotos" -ForegroundColor White
-    Write-Host ""
-    Write-Host " Proyecto personal - uso no comercial" -ForegroundColor DarkGray
+    Write-Host " Proyecto personal - entorno privado" -ForegroundColor DarkGray
     Write-Host ""
 
     Read-Host " Pulsa ENTER para volver al menu"

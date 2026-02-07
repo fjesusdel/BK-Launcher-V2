@@ -18,7 +18,7 @@ function UI-Header {
     Write-Host "                    BK-LAUNCHER V2" -ForegroundColor White
     UI-Line "=" 60 Cyan
     Write-Host " Sistema de gestion e instalacion de software" -ForegroundColor DarkGray
-    Write-Host " Autor  : Fran Delgado" -ForegroundColor DarkGray
+    Write-Host " Autor  : FJ.Root" -ForegroundColor DarkGray
     Write-Host " Version: 2.0" -ForegroundColor DarkGray
     UI-Line "-" 60 DarkGray
     Write-Host ""
@@ -28,7 +28,7 @@ function UI-SectionTitle {
     param ([string]$Title)
 
     Write-Host ""
-    Write-Host " $Title" -ForegroundColor Yellow
+    Write-Host " $Title" -ForegroundColor White
     UI-Line "-" 60 DarkGray
     Write-Host ""
 }
@@ -41,8 +41,10 @@ function UI-MenuOption {
         [ConsoleColor]$TextColor = "White"
     )
 
-    Write-Host "   [$Key] " -NoNewline -ForegroundColor $KeyColor
+    # Margen visual alineado con el header
+    Write-Host " [$Key] " -NoNewline -ForegroundColor $KeyColor
     Write-Host $Text -ForegroundColor $TextColor
+    Write-Host ""
 }
 
 function UI-Footer {

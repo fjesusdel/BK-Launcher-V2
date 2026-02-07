@@ -77,8 +77,19 @@ function Show-MultiSelectMenu {
                 $mark, $index, $app.Name, $status
 
             Write-Host $line -ForegroundColor $color
-            Write-Host ""
 
+            # -------- DESCRIPCION SOLO SI ESTA SELECCIONADA --------
+            if ($selected[$app.Id] -and $app.ContainsKey("Description")) {
+
+                $descLines = $app.Description -split "`n"
+                foreach ($descLine in $descLines) {
+                    if (-not [string]::IsNullOrWhiteSpace($descLine)) {
+                        Write-Host "      $descLine" -ForegroundColor DarkGray
+                    }
+                }
+            }
+
+            Write-Host ""
             $index++
         }
 

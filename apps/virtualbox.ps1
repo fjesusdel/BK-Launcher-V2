@@ -8,6 +8,13 @@ return @{
     Name          = "Oracle VirtualBox"
     Type          = "binary"
 
+    Description = @"
+VirtualBox es un software de virtualizacion.
+Permite ejecutar otros sistemas operativos dentro de Windows,
+como Linux o versiones de Windows, usando maquinas virtuales.
+Es util para pruebas, desarrollo y entornos aislados.
+"@
+
     InstallMode   = "interactive"
     UninstallMode = "interactive"
 

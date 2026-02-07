@@ -8,6 +8,12 @@ return @{
     Name                = "Control de volumen BK"
     Type                = "utility"
 
+    Description = @"
+Herramienta propia de BK-Launcher para controlar el volumen del sistema.
+Permite subir, bajar y silenciar el audio mediante atajos de teclado.
+Muestra un indicador visual en pantalla y se inicia automaticamente con Windows.
+"@
+
     InstallMode         = "interactive"
     UninstallMode       = "silent"
     VerifyAfterInstall  = $false

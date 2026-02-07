@@ -8,6 +8,12 @@ return @{
     Name          = "AutoHotkey"
     Type          = "binary"
 
+    Description = @"
+AutoHotkey es una herramienta de automatizacion para Windows.
+Permite crear scripts con atajos de teclado, macros y acciones automaticas.
+Es utilizada para personalizar el sistema y mejorar la productividad.
+"@
+
     InstallMode   = "silent"
     UninstallMode = "interactive"
 
