@@ -7,6 +7,7 @@
 . "$PSScriptRoot\core\engine.ps1"
 . "$PSScriptRoot\core\menu.ps1"
 . "$PSScriptRoot\core\ui.ps1"
+. "$PSScriptRoot\tools.ps1"
 
 Load-Apps "$PSScriptRoot\apps"
 
@@ -28,7 +29,6 @@ function Handle-Install {
         return
     }
 
-    # ---- AVISO PREVIO SI HAY APPS INTERACTIVAS ----
     $interactiveApps = $plan | Where-Object {
         $_.ContainsKey("InstallMode") -and $_.InstallMode -eq "interactive"
     }
@@ -39,19 +39,13 @@ function Handle-Install {
         UI-SectionTitle "AVISO IMPORTANTE"
 
         Write-Host ""
-        Write-Host " Se van a lanzar uno o mas instaladores oficiales externos." -ForegroundColor Yellow
+        Write-Host " Se van a lanzar instaladores oficiales externos." -ForegroundColor Yellow
+        Write-Host " El launcher puede quedar en segundo plano unos segundos." -ForegroundColor Yellow
         Write-Host ""
-        Write-Host " Durante el proceso:" -ForegroundColor Yellow
-        Write-Host "  - Apareceran ventanas de instalacion independientes" -ForegroundColor Yellow
-        Write-Host "  - El launcher puede quedar en segundo plano" -ForegroundColor Yellow
-        Write-Host "  - El proceso puede tardar unos segundos entre aplicaciones" -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host " Esto es normal. No cierres el launcher." -ForegroundColor Yellow
-        Write-Host ""
-        Write-Host " Cuando pulses ENTER comenzara la instalacion." -ForegroundColor Cyan
+        Write-Host " Pulsa ENTER para comenzar." -ForegroundColor Cyan
         Write-Host ""
 
-        Read-Host " Pulsa ENTER para continuar"
+        Read-Host
     }
 
     foreach ($app in $plan) {
@@ -121,6 +115,9 @@ function Show-MainMenu {
     UI-MenuOption "2" "Desinstalar aplicaciones"
     UI-MenuOption "3" "Informacion del sistema"
     UI-MenuOption "4" "Acerca de"
+
+    Write-Host ""
+    UI-MenuOption "A" "Herramientas y activaciones" Cyan
     Write-Host ""
     UI-MenuOption "0" "Salir" Red White
     Write-Host ""
@@ -131,6 +128,8 @@ function Show-MainMenu {
         "2" { Handle-Uninstall }
         "3" { Show-SystemInfo }
         "4" { Show-About }
+        "A" { Show-ToolsMenu }
+        "a" { Show-ToolsMenu }
         "0" { exit }
     }
 }
